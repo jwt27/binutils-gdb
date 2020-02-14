@@ -443,12 +443,15 @@ go32_stubbed_coff_bfd_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
      optionally allocate the output stub.  */
   if (coff_data (obfd)->go32stub == NULL)
     coff_data (obfd)->go32stub = bfd_alloc (obfd,
-					  (bfd_size_type) bfd_coff_filhsz(ibfd) - 20);
+				 (bfd_size_type) bfd_coff_filhsz (ibfd) - 20);
 
   /* Now copy the stub.  */
   if (coff_data (obfd)->go32stub != NULL)
-    memcpy (coff_data (obfd)->go32stub, coff_data (ibfd)->go32stub,
-	    bfd_coff_filhsz(ibfd) - 20);
+    {
+      memcpy (coff_data (obfd)->go32stub, coff_data (ibfd)->go32stub,
+              bfd_coff_filhsz (ibfd) - 20);
+      bfd_coff_filhsz (obfd) = bfd_coff_filhsz (ibfd);
+    }
 
   return TRUE;
 }
