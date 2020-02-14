@@ -165,6 +165,8 @@ adjust_filehdr_in_pre  (bfd *  abfd,
   memcpy(filehdr_src->f_magic,  p + 0,  2);
 
   bfd_coff_filhsz(abfd) = stubsize + 20;
+
+  bfd_seek (abfd, bfd_coff_filhsz(abfd), SEEK_SET);
 }
 
 static void
