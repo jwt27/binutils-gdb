@@ -409,8 +409,10 @@ create_go32_stub (bfd *abfd)
 	  bfd_release (abfd, coff_data (abfd)->go32stub);
 	  coff_data (abfd)->go32stub = NULL;
 	}
+      else
+        bfd_coff_filhsz (abfd) = coff_start + 20;
+
       close (f);
-      bfd_coff_filhsz(abfd) = coff_start;
     }
 stub_end:
   /* There was something wrong above, so use now the standard builtin
