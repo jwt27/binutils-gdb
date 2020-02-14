@@ -480,9 +480,9 @@ htab_empty (htab_t htab)
 static PTR *
 find_empty_slot_for_expand (htab_t htab, hashval_t hash)
 {
-  hashval_t index = htab_mod (hash, htab);
+  hashval_t lib_index = htab_mod (hash, htab);
   size_t size = htab_size (htab);
-  PTR *slot = htab->entries + index;
+  PTR *slot = htab->entries + lib_index;
   hashval_t hash2;
 
   if (*slot == HTAB_EMPTY_ENTRY)
@@ -493,11 +493,11 @@ find_empty_slot_for_expand (htab_t htab, hashval_t hash)
   hash2 = htab_mod_m2 (hash, htab);
   for (;;)
     {
-      index += hash2;
-      if (index >= size)
-	index -= size;
+      lib_index += hash2;
+      if (lib_index >= size)
+	lib_index -= size;
 
-      slot = htab->entries + index;
+      slot = htab->entries + lib_index;
       if (*slot == HTAB_EMPTY_ENTRY)
 	return slot;
       else if (*slot == HTAB_DELETED_ENTRY)
@@ -584,15 +584,15 @@ htab_expand (htab_t htab)
 PTR
 htab_find_with_hash (htab_t htab, const PTR element, hashval_t hash)
 {
-  hashval_t index, hash2;
+  hashval_t lib_index, hash2;
   size_t size;
   PTR entry;
 
   htab->searches++;
   size = htab_size (htab);
-  index = htab_mod (hash, htab);
+  lib_index = htab_mod (hash, htab);
 
-  entry = htab->entries[index];
+  entry = htab->entries[lib_index];
   if (entry == HTAB_EMPTY_ENTRY
       || (entry != HTAB_DELETED_ENTRY && (*htab->eq_f) (entry, element)))
     return entry;
@@ -601,11 +601,11 @@ htab_find_with_hash (htab_t htab, const PTR element, hashval_t hash)
   for (;;)
     {
       htab->collisions++;
-      index += hash2;
-      if (index >= size)
-	index -= size;
+      lib_index += hash2;
+      if (lib_index >= size)
+	lib_index -= size;
 
-      entry = htab->entries[index];
+      entry = htab->entries[lib_index];
       if (entry == HTAB_EMPTY_ENTRY
 	  || (entry != HTAB_DELETED_ENTRY && (*htab->eq_f) (entry, element)))
 	return entry;
@@ -634,7 +634,7 @@ htab_find_slot_with_hash (htab_t htab, const PTR element,
                           hashval_t hash, enum insert_option insert)
 {
   PTR *first_deleted_slot;
-  hashval_t index, hash2;
+  hashval_t lib_index, hash2;
   size_t size;
   PTR entry;
 
@@ -646,37 +646,37 @@ htab_find_slot_with_hash (htab_t htab, const PTR element,
       size = htab_size (htab);
     }
 
-  index = htab_mod (hash, htab);
+  lib_index = htab_mod (hash, htab);
 
   htab->searches++;
   first_deleted_slot = NULL;
 
-  entry = htab->entries[index];
+  entry = htab->entries[lib_index];
   if (entry == HTAB_EMPTY_ENTRY)
     goto empty_entry;
   else if (entry == HTAB_DELETED_ENTRY)
-    first_deleted_slot = &htab->entries[index];
+    first_deleted_slot = &htab->entries[lib_index];
   else if ((*htab->eq_f) (entry, element))
-    return &htab->entries[index];
-      
+    return &htab->entries[lib_index];
+
   hash2 = htab_mod_m2 (hash, htab);
   for (;;)
     {
       htab->collisions++;
-      index += hash2;
-      if (index >= size)
-	index -= size;
+      lib_index += hash2;
+      if (lib_index >= size)
+	lib_index -= size;
       
-      entry = htab->entries[index];
+      entry = htab->entries[lib_index];
       if (entry == HTAB_EMPTY_ENTRY)
 	goto empty_entry;
       else if (entry == HTAB_DELETED_ENTRY)
 	{
 	  if (!first_deleted_slot)
-	    first_deleted_slot = &htab->entries[index];
+	    first_deleted_slot = &htab->entries[lib_index];
 	}
       else if ((*htab->eq_f) (entry, element))
-	return &htab->entries[index];
+	return &htab->entries[lib_index];
     }
 
  empty_entry:
@@ -691,7 +691,7 @@ htab_find_slot_with_hash (htab_t htab, const PTR element,
     }
 
   htab->n_elements++;
-  return &htab->entries[index];
+  return &htab->entries[lib_index];
 }
 
 /* Like htab_find_slot_with_hash, but compute the hash value from the

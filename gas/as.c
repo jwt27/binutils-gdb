@@ -1242,7 +1242,7 @@ main (int argc, char ** argv)
   HOST_SPECIAL_INIT (argc, argv);
 #endif
 
-  myname = argv[0];
+  myname = STRIP_FULL_PATH_AND_EXTENSION(argv[0]);
   xmalloc_set_program_name (myname);
 
   expandargv (&argc, &argv);

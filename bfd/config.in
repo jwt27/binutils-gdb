@@ -422,3 +422,37 @@
 
 /* Define to 1 if you need to in order for `stat' and other things to work. */
 #undef _POSIX_SOURCE
+#ifdef __DJGPP__
+# if defined (__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 8))
+#  define __gnuc_extension__  __extension__
+# else
+#  define __gnuc_extension__
+# endif
+
+# undef  IS_SLASH
+# define IS_SLASH(c)                ((c) == '/' || (c) == '\\')
+# undef  IS_DIRECTORY_SEPARATOR
+# define IS_DIRECTORY_SEPARATOR(c)  (IS_SLASH(c) || (c) == ':')
+
+# include <libc/unconst.h>
+# define STRIP_FULL_PATH_AND_EXTENSION(file_name)   \
+  (__gnuc_extension__                               \
+    ({                                              \
+       char *_dst, *_src;                           \
+       _dst = _src = unconst((file_name), char *);  \
+       while (*_src++)                              \
+         ;                                          \
+       while ((_src - _dst) && (*--_src != '.'))    \
+         ;                                          \
+       for (*_src = '\0'; (_src - _dst); _src--)    \
+         if (IS_DIRECTORY_SEPARATOR(*_src))         \
+           break;                                   \
+       if (_src - _dst)                             \
+         while ((*_dst++ = *++_src))                \
+           ;                                        \
+       (file_name);                                 \
+    })                                              \
+  )
+#else
+# define STRIP_FULL_PATH_AND_EXTENSION(file_name)  (file_name)
+#endif

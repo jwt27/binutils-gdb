@@ -77,7 +77,7 @@ bfd_cache_max_open (void)
   if (max_open_files == 0)
     {
       int max;
-#if defined(__sun) && !defined(__sparcv9) && !defined(__x86_64__)
+#if defined(__sun) && !defined(__sparcv9) && !defined(__x86_64__) || defined(__DJGPP__)
       /* PR ld/19260: 32-bit Solaris has very inelegant handling of the 255
 	 file descriptor limit.  The problem is that setrlimit(2) can raise
 	 RLIMIT_NOFILE to a value that is not supported by libc, resulting

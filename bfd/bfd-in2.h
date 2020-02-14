@@ -571,6 +571,12 @@ struct ecoff_debug_swap;
 struct ecoff_extr;
 struct bfd_link_info;
 struct bfd_link_hash_entry;
+
+/* This controls if the coff 64k relocation support shall be disabled or not.
+   By default always enabled.  */
+#if defined(__DJGPP__) || defined(COFF_GO32_EXE) || defined(COFF_GO32)
+extern bfd_boolean coff_64k_relocation_enabled;
+#endif
 /* Extracted from init.c.  */
 unsigned int bfd_init (void);
 

@@ -746,6 +746,19 @@ coff_swap_scnhdr_in (bfd * abfd, void * ext, void * in)
   scnhdr_int->s_flags = GET_SCNHDR_FLAGS (abfd, scnhdr_ext->s_flags);
   scnhdr_int->s_nreloc = GET_SCNHDR_NRELOC (abfd, scnhdr_ext->s_nreloc);
   scnhdr_int->s_nlnno = GET_SCNHDR_NLNNO (abfd, scnhdr_ext->s_nlnno);
+#if defined (COFF_GO32_EXE) || defined(COFF_GO32)
+  /* DJGPP follows the same strategy than PE COFF.
+     Iff the file is an executable then the higher 16 bits
+     of the line number have been stored in the relocation
+     counter field.  */
+  if (coff_64k_relocation_enabled && abfd->flags & EXEC_P
+      && (strcmp(scnhdr_ext->s_name, ".text") == 0))
+  {
+    scnhdr_int->s_nlnno = (GET_SCNHDR_NRELOC(abfd, scnhdr_ext->s_nreloc) << 16)
+                          + GET_SCNHDR_NLNNO(abfd, scnhdr_ext->s_nlnno);
+    scnhdr_int->s_nreloc = 0;
+  }
+#endif
 #ifdef COFF_ADJUST_SCNHDR_IN_POST
   COFF_ADJUST_SCNHDR_IN_POST (abfd, ext, in);
 #endif
@@ -770,6 +783,61 @@ coff_swap_scnhdr_out (bfd * abfd, void * in, void * out)
   PUT_SCNHDR_RELPTR (abfd, scnhdr_int->s_relptr, scnhdr_ext->s_relptr);
   PUT_SCNHDR_LNNOPTR (abfd, scnhdr_int->s_lnnoptr, scnhdr_ext->s_lnnoptr);
   PUT_SCNHDR_FLAGS (abfd, scnhdr_int->s_flags, scnhdr_ext->s_flags);
+#if defined (COFF_GO32_EXE) || defined(COFF_GO32)
+  if (coff_64k_relocation_enabled)
+    {
+      if (abfd->flags & EXEC_P
+	  && (strcmp(scnhdr_int->s_name, ".text") == 0))
+	{
+	  /* DJGPP follows the same strategy than PE COFF.
+	     By inference from looking at MS output, the 32 bit field
+	     which is the combination of the number_of_relocs and
+	     number_of_linenos is used for the line number count in
+	     executables.  A 16-bit field won't do for cc1.  The MS
+	     document says that the number of relocs is zero for
+	     executables, but the 17-th bit has been observed to be there.
+	     Overflow is not an issue: a 4G-line program will overflow a
+	     bunch of other fields long before this!  */
+	  PUT_SCNHDR_NLNNO (abfd, (scnhdr_int->s_nlnno & 0xffff), scnhdr_ext->s_nlnno);
+	  PUT_SCNHDR_NRELOC (abfd, (scnhdr_int->s_nlnno >> 16), scnhdr_ext->s_nreloc);
+	}
+      else
+	{
+	  /* DJGPP follows the same strategy than PE COFF. */
+	  if (scnhdr_int->s_nlnno <= MAX_SCNHDR_NLNNO)
+	    PUT_SCNHDR_NLNNO (abfd, scnhdr_int->s_nlnno, scnhdr_ext->s_nlnno);
+	  else
+	    {
+	       char buf[sizeof (scnhdr_int->s_name) + 1];
+
+	       memcpy (buf, scnhdr_int->s_name, sizeof (scnhdr_int->s_name));
+	       buf[sizeof (scnhdr_int->s_name)] = '\0';
+	       (*_bfd_error_handler)
+		(_("%s: %s: line number overflow: 0x%lx > 0xffff"),
+		 bfd_get_filename (abfd),
+		 buf, scnhdr_int->s_nlnno);
+	       bfd_set_error (bfd_error_file_truncated);
+	       PUT_SCNHDR_NLNNO (abfd, 0xffff, scnhdr_ext->s_nlnno);
+	       ret = 0;
+	    }
+
+	  /* Although we could encode 0xffff relocs here, we do not, to be
+	     consistent with other parts of bfd. Also it lets us warn, as
+	     we should never see 0xffff here w/o having the overflow flag
+	     set.  */
+	  if (scnhdr_int->s_nreloc < MAX_SCNHDR_NRELOC)
+	    PUT_SCNHDR_NRELOC (abfd, scnhdr_int->s_nreloc, scnhdr_ext->s_nreloc);
+	  else
+	    {
+	       /* DJGPP can deal with large #s of relocs, but not here.  */
+	       PUT_SCNHDR_NRELOC (abfd, 0xffff, scnhdr_ext->s_nreloc);
+	       scnhdr_int->s_flags |= IMAGE_SCN_LNK_NRELOC_OVFL;
+	       PUT_SCNHDR_FLAGS (abfd, scnhdr_int->s_flags, scnhdr_ext->s_flags);
+	    }
+	}
+      goto finalization;
+    }
+#endif
   if (scnhdr_int->s_nlnno <= MAX_SCNHDR_NLNNO)
     PUT_SCNHDR_NLNNO (abfd, scnhdr_int->s_nlnno, scnhdr_ext->s_nlnno);
   else
@@ -801,6 +869,9 @@ coff_swap_scnhdr_out (bfd * abfd, void * in, void * out)
       ret = 0;
     }
 
+#if defined (COFF_GO32_EXE) || defined(COFF_GO32)
+finalization:
+#endif
 #ifdef COFF_ADJUST_SCNHDR_OUT_POST
   COFF_ADJUST_SCNHDR_OUT_POST (abfd, in, out);
 #endif

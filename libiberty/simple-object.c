@@ -260,9 +260,9 @@ simple_object_find_section (simple_object_read *sobj, const char *name,
    ones.  */
 
 static char *
-handle_lto_debug_sections (const char *name, int rename)
+handle_lto_debug_sections (const char *name, int lib_rename)
 {
-  char *newname = rename ? XCNEWVEC (char, strlen (name) + 1)
+  char *newname = lib_rename ? XCNEWVEC (char, strlen (name) + 1)
 	  	         : xstrdup (name);
 
   /* ???  So we can't use .gnu.lto_ prefixed sections as the assembler
@@ -272,13 +272,13 @@ handle_lto_debug_sections (const char *name, int rename)
   /* Also include corresponding reloc sections.  */
   if (strncmp (name, ".rela", sizeof (".rela") - 1) == 0)
     {
-      if (rename)
+      if (lib_rename)
         strncpy (newname, name, sizeof (".rela") - 1);
       name += sizeof (".rela") - 1;
     }
   else if (strncmp (name, ".rel", sizeof (".rel") - 1) == 0)
     {
-      if (rename)
+      if (lib_rename)
         strncpy (newname, name, sizeof (".rel") - 1);
       name += sizeof (".rel") - 1;
     }
@@ -286,10 +286,10 @@ handle_lto_debug_sections (const char *name, int rename)
      sections.  */
   /* Copy LTO debug sections and rename them to their non-LTO name.  */
   if (strncmp (name, ".gnu.debuglto_", sizeof (".gnu.debuglto_") - 1) == 0)
-    return rename ? strcat (newname, name + sizeof (".gnu.debuglto_") - 1) : newname;
+    return lib_rename ? strcat (newname, name + sizeof (".gnu.debuglto_") - 1) : newname;
   else if (strncmp (name, ".gnu.lto_.debug_",
 		    sizeof (".gnu.lto_.debug_") -1) == 0)
-    return rename ? strcat (newname, name + sizeof (".gnu.lto_") - 1) : newname;
+    return lib_rename ? strcat (newname, name + sizeof (".gnu.lto_") - 1) : newname;
   /* Copy over .note.GNU-stack section under the same name if present.  */
   else if (strcmp (name, ".note.GNU-stack") == 0)
     return strcpy (newname, name);
@@ -322,7 +322,7 @@ handle_lto_debug_sections_norename (const char *name)
 
 const char *
 simple_object_copy_lto_debug_sections (simple_object_read *sobj,
-				       const char *dest, int *err, int rename)
+				       const char *dest, int *err, int lib_rename)
 {
   const char *errmsg;
   simple_object_write *dest_sobj;
@@ -345,7 +345,7 @@ simple_object_copy_lto_debug_sections (simple_object_read *sobj,
 
   errmsg = sobj->functions->copy_lto_debug_sections
 	 	 (sobj, dest_sobj,
-		  rename ? handle_lto_debug_sections_rename
+		  lib_rename ? handle_lto_debug_sections_rename
 			 : handle_lto_debug_sections_norename,  err);
   if (errmsg)
     {

@@ -144,7 +144,7 @@ main (int argc, char **argv)
   const char *valid_symbols;
   enum demangling_styles style = auto_demangling;
 
-  program_name = argv[0];
+  program_name = STRIP_FULL_PATH_AND_EXTENSION(argv[0]);
   xmalloc_set_program_name (program_name);
   bfd_set_error_program_name (program_name);
 

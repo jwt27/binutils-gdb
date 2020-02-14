@@ -64,7 +64,7 @@ get_pxdata_name (segT seg, const char *base_name)
   else
     name = dollar;
 
-  sname = concat (base_name, name, NULL);
+  sname = concat (base_name, name, (char *)NULL);
 
   return sname;
 }

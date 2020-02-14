@@ -23,6 +23,12 @@
 #include "bfd.h"
 #include "libbfd.h"
 
+/* This controls if the coff 64k support shall be disabled or not.
+   By default always enabled.  */
+/* #if defined(__DJGPP__) || defined(COFF_GO32_EXE) || defined(COFF_GO32) */
+bfd_boolean coff_64k_relocation_enabled = TRUE;
+/* #endif */
+
 /*
 SECTION
 	Initialization
@@ -57,5 +63,11 @@ DESCRIPTION
 unsigned int
 bfd_init (void)
 {
+#if defined(__DJGPP__) || defined(COFF_GO32_EXE) || defined(COFF_GO32)
+  const char *disable_64k_reloc_support = getenv("DISABLE_64K_RELOC_SUPPORT");
+  coff_64k_relocation_enabled = !(disable_64k_reloc_support &&
+                                  (disable_64k_reloc_support[0] == 'y' || disable_64k_reloc_support[0] == 'Y') &&
+                                  disable_64k_reloc_support[1] == '\0') ? TRUE : FALSE;
+#endif
   return BFD_INIT_MAGIC;
 }

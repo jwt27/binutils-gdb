@@ -47,13 +47,22 @@ SECTIONS
     ${RELOCATING+djgpp_first_ctor = . ;
     *(SORT(.ctors.*))
     *(.ctor)
+    *(.ctors)
     djgpp_last_ctor = . ;}
     ${RELOCATING+djgpp_first_dtor = . ;
     *(SORT(.dtors.*))
     *(.dtor)
+    *(.dtors)
     djgpp_last_dtor = . ;}
+    __environ = . ;
+    PROVIDE(_environ = .) ;
+    LONG(0) ;
     *(.data)
     ${RELOCATING+*(.data.*)}
+
+    /* Ugly workaround to prevent entire .bss to have attribute CONTENT */
+    /* for C++ executables. */
+    *(.bss.*)
 
     ${RELOCATING+*(.gcc_exc*)}
     ${RELOCATING+___EH_FRAME_BEGIN__ = . ;}
@@ -69,11 +78,13 @@ SECTIONS
   ${CONSTRUCTING+${RELOCATING-$DTOR}}
   .bss ${RELOCATING+ SIZEOF(.data) + ADDR(.data)} :
   {
-    *(.bss${RELOCATING+ .bss.* .gnu.linkonce.b.*})
+    *(.bss${RELOCATING+ .gnu.linkonce.b.*})
     *(COMMON)
     ${RELOCATING+ end = . ; PROVIDE(_end = .) ;}
     ${RELOCATING+ . = ALIGN(${SEGMENT_SIZE});}
   }
+  /* Discard LTO sections.  */
+  /DISCARD/ : { *(gnu.lto_*) } 
   /* Stabs debugging sections.  */
   .stab 0 : { *(.stab) }
   .stabstr 0 : { *(.stabstr) }

@@ -1000,16 +1000,16 @@ simple_object_elf_write_to_file (simple_object_write *sobj, int descriptor,
       while (new_sh_offset > sh_offset)
 	{
 	  unsigned char zeroes[16];
-	  size_t write;
+	  size_t lib_write;
 
 	  memset (zeroes, 0, sizeof zeroes);
-	  write = new_sh_offset - sh_offset;
-	  if (write > sizeof zeroes)
-	    write = sizeof zeroes;
+	  lib_write = new_sh_offset - sh_offset;
+	  if (lib_write > sizeof zeroes)
+	    lib_write = sizeof zeroes;
 	  if (!simple_object_internal_write (descriptor, sh_offset, zeroes,
-					     write, &errmsg, err))
+					     lib_write, &errmsg, err))
 	    return errmsg;
-	  sh_offset += write;
+	  sh_offset += lib_write;
 	}
 
       sh_size = 0;

@@ -486,7 +486,7 @@ floatformat_to_double (const struct floatformat *fmt,
      don't try to preserve the type of NaN.  FIXME.  */
   if ((unsigned long) exponent == fmt->exp_nan)
     {
-      int nan = mant_bits_set (fmt, ufrom);
+      int bfd_nan = mant_bits_set (fmt, ufrom);
 
       /* On certain systems (such as GNU/Linux), the use of the
 	 INFINITY macro below may generate a warning that cannot be
@@ -495,7 +495,7 @@ floatformat_to_double (const struct floatformat *fmt,
 	 conjunction with the GNU/C99 extension for hexadecimal
 	 floating point constants and will issue a warning when
 	 compiling with -pedantic.  */
-      if (nan)
+      if (bfd_nan)
 	dto = NAN;
       else
 	dto = INFINITY;

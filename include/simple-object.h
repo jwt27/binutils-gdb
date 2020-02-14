@@ -206,7 +206,7 @@ simple_object_release_write (simple_object_write *);
 extern const char *
 simple_object_copy_lto_debug_sections (simple_object_read *src_object,
 				       const char *dest,
-				       int *err, int rename);
+				       int *err, int lib_rename);
 
 #ifdef __cplusplus
 }

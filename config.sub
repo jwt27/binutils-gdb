@@ -303,6 +303,15 @@ case $1 in
 				;;
 			djgpp)
 				basic_machine=i586-pc
+				UNAME_MACHINE=`(uname -m) 2>/dev/null` || UNAME_MACHINE=unknown
+				case $UNAME_MACHINE in
+					*386*) basic_machine=i386-pc;;
+					*486*) basic_machine=i486-pc;;
+					*586*) basic_machine=i586-pc;;
+					*686*) basic_machine=i686-pc;;
+					*786*) basic_machine=i786-pc;;
+					*)     basic_machine=i586-pc;;
+				esac
 				os=msdosdjgpp
 				;;
 			ebmon29k)

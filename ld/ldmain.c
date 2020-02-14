@@ -205,7 +205,7 @@ main (int argc, char **argv)
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
-  program_name = argv[0];
+  program_name = STRIP_FULL_PATH_AND_EXTENSION(argv[0]);
   xmalloc_set_program_name (program_name);
 
   START_PROGRESS (program_name, 0);
@@ -993,6 +993,30 @@ multiple_definition (struct bfd_link_info *info,
 	      && !bfd_is_abs_section (nsec)
 	      && bfd_is_abs_section (nsec->output_section))))
     return;
+
+#if defined(HAVE_DXE3_SUPPORT) && HAVE_DXE3_SUPPORT == 1
+  /*  DJGPP specific resolution of multiple symbol definitions.
+      A symbol defined in an object file or in an static library
+      and at the same time in an import library belonging to a
+      DXE3 module will be replaced by the symbol provided by the
+      import library.  If more than one import library provides
+      the same symbol the first one will be used and all other
+      ones will be ignored.
+      A symbol from an import library is identified by its "dxe_tmp.o"
+      or "$$dxe$$.o" file name.  */
+
+#define IS_IMPORT_LIBRARY_SYMBOL(name)  (((name)[0] == 'd' && (name)[1] == 'x' && (name)[2] == 'e' && (name)[3] == '_' && \
+                                          (name)[4] == 't' && (name)[5] == 'm' && (name)[6] == 'p' && (name)[7] == '.' && \
+                                          (name)[8] == 'o') ||                                                            \
+                                         ((name)[0] == '$' && (name)[1] == '$' && (name)[2] == 'd' && (name)[3] == 'x' && \
+                                          (name)[4] == 'e' && (name)[5] == '$' && (name)[6] == '$' && (name)[7] == '.' && \
+                                          (name)[8] == 'o'))
+
+    if (h->type == bfd_link_hash_defined && IS_IMPORT_LIBRARY_SYMBOL(nsec->owner->filename))
+      return;
+
+#undef IS_IMPORT_LIBRARY_SYMBOL
+#endif /*  HAVE_DXE3_SUPPORT  */
 
   name = h->root.string;
   if (nbfd == NULL)

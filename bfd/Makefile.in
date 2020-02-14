@@ -2015,7 +2015,7 @@ aout-params.h: gen-aout
 gen-aout: $(srcdir)/gen-aout.c Makefile
 	$(CC) -o gen-aout $(CFLAGS) $(LFLAGS) $(srcdir)/gen-aout.c
 
-$(BFD_H): stmp-bfd-h ; @true
+$(BFD_H): stmp-lcoff-h stmp-bfd-h ; @true
 
 stmp-bfd-h: bfd-in3.h
 	rm -f bfd-tmp.h
@@ -2037,7 +2037,7 @@ headers:
 # We only rebuild the header files automatically if we have been
 # configured with --enable-maintainer-mode.
 
-$(srcdir)/bfd-in2.h: @MAINT@ stmp-bin2-h ; @true
+$(srcdir)/bfd-in2.h: stmp-bin2-h ; @true
 stmp-bin2-h: $(BFD_H_FILES) $(BFD64_H_FILES)
 	(cd $(bfddocdir); $(MAKE) $(FLAGS_TO_PASS) bfd.h)
 	cp $(bfddocdir)/bfd.h bfd-in2.h-new

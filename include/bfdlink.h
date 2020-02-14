@@ -304,7 +304,7 @@ enum output_type
   type_pde,
   type_pie,
   type_relocatable,
-  type_dll,
+  type_dll
 };
 
 #define bfd_link_pde(info)	   ((info)->type == type_pde)

@@ -33,8 +33,9 @@ extern "C" {
 
 #define coff_data(bfd)		      ((bfd)->tdata.coff_obj_data)
 #define obj_pe(bfd)		      (coff_data (bfd)->pe)
+#define obj_go32(bfd)		      (coff_data (bfd)->go32)
 #define obj_symbols(bfd)	      (coff_data (bfd)->symbols)
-#define	obj_sym_filepos(bfd)	      (coff_data (bfd)->sym_filepos)
+#define obj_sym_filepos(bfd)	      (coff_data (bfd)->sym_filepos)
 #define obj_relocbase(bfd)	      (coff_data (bfd)->relocbase)
 #define obj_raw_syments(bfd)	      (coff_data (bfd)->raw_syments)
 #define obj_raw_syment_count(bfd)     (coff_data (bfd)->raw_syment_count)
@@ -114,6 +115,8 @@ typedef struct coff_tdata
      used by ARM code.  */
   flagword flags;
 
+  /* Is this a GO32 coff file?  */
+  int go32;
   /* coff-stgo32 EXE stub header after BFD tdata has been allocated.  Its data
      is kept in internal_filehdr.go32stub beforehand.  */
   char *go32stub;

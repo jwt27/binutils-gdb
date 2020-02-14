@@ -22,6 +22,7 @@
 #define TARGET_SYM		i386_coff_go32_vec
 #define TARGET_NAME		"coff-go32"
 #define TARGET_UNDERSCORE	'_'
+#define COFF_GO32
 #define COFF_LONG_SECTION_NAMES
 #define COFF_SUPPORT_GNU_LINKONCE
 #define COFF_LONG_FILENAMES
@@ -41,5 +42,15 @@
   COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 0 }, \
 { COFF_SECTION_NAME_PARTIAL_MATCH (".gnu.linkonce.wi"), \
   COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 0 }
+
+/* Section contains extended relocations. */
+#define IMAGE_SCN_LNK_NRELOC_OVFL  0x01000000
+
+#include "sysdep.h"
+#include "bfd.h"
+
+bfd_boolean _bfd_go32_mkobject (bfd *abfd);
+
+#define coff_mkobject  _bfd_go32_mkobject
 
 #include "coff-i386.c"

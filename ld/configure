@@ -17702,6 +17702,15 @@ ac_config_commands="$ac_config_commands default"
 
 
 
+case "$target_os" in
+  *djgpp)
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DXE3_SUPPORT 1
+_ACEOF
+ ;;
+esac
+
+
 ac_config_files="$ac_config_files Makefile po/Makefile.in:po/Make-in"
 
 cat >confcache <<\_ACEOF

@@ -1731,7 +1731,7 @@ main (int ac, char **av)
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
-  program_name = av[0];
+  program_name = STRIP_FULL_PATH_AND_EXTENSION(av[0]);
   xmalloc_set_program_name (program_name);
   bfd_set_error_program_name (program_name);
 

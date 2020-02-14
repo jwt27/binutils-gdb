@@ -117,7 +117,7 @@ temp_file (struct pex_obj *obj, int flags, char *name)
               && strcmp (obj->tempbase + len - 6, "XXXXXX") == 0)
             name = xstrdup (obj->tempbase);
           else
-            name = concat (obj->tempbase, "XXXXXX", NULL);
+            name = concat (obj->tempbase, "XXXXXX", (char *)NULL);
 
           out = mkstemps (name, 0);
           if (out < 0)
@@ -138,7 +138,7 @@ temp_file (struct pex_obj *obj, int flags, char *name)
       if (obj->tempbase == NULL)
         name = make_temp_file (name);
       else
-        name = concat (obj->tempbase, name, NULL);
+        name = concat (obj->tempbase, name, (char *)NULL);
     }
 
   return name;
@@ -222,7 +222,7 @@ pex_run_in_environment (struct pex_obj *obj, int flags, const char *executable,
 	out = STDOUT_FILE_NO;
       else if ((flags & PEX_SUFFIX) != 0)
 	{
-	  outname = concat (obj->tempbase, outname, NULL);
+	  outname = concat (obj->tempbase, outname, (char *)NULL);
 	  outname_allocated = 1;
 	}
       obj->next_input = -1;

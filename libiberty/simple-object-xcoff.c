@@ -907,13 +907,13 @@ simple_object_xcoff_write_to_file (simple_object_write *sobj, int descriptor,
       while (new_offset > offset)
 	{
 	  unsigned char zeroes[16];
-	  size_t write;
+	  size_t lib_write;
 
 	  memset (zeroes, 0, sizeof zeroes);
-	  write = new_offset - offset;
-	  if (write > sizeof zeroes)
-	    write = sizeof zeroes;
-	  if (!simple_object_internal_write (descriptor, offset, zeroes, write,
+	  lib_write = new_offset - offset;
+	  if (lib_write > sizeof zeroes)
+	    lib_write = sizeof zeroes;
+	  if (!simple_object_internal_write (descriptor, offset, zeroes, lib_write,
 					     &errmsg, err))
 	    return errmsg;
 	}

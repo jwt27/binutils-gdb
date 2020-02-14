@@ -54,12 +54,27 @@ extern int mkstemps (char *, int);
 #define DIR_SEPARATOR '/'
 #endif
 
+#if defined (_WIN32) || defined (__MSDOS__) \
+    || defined (__DJGPP__) || defined (__OS2__)
+#  define HAVE_DOS_BASED_FILE_SYSTEM
+#  ifndef DIR_SEPARATOR_2 
+#    define DIR_SEPARATOR_2 '\\'
+#  endif
+#endif
+
+#ifndef DIR_SEPARATOR_2
+#  define IS_DIR_SEPARATOR(ch) ((ch) == DIR_SEPARATOR)
+#else
+#  define IS_DIR_SEPARATOR(ch) \
+     (((ch) == DIR_SEPARATOR) || ((ch) == DIR_SEPARATOR_2))
+#endif
+
 /* Name of temporary file.
    mktemp requires 6 trailing X's.  */
 #define TEMP_FILE "XXXXXX"
 #define TEMP_FILE_LEN (sizeof(TEMP_FILE) - 1)
 
-#if !defined(_WIN32) || defined(__CYGWIN__)
+#if !defined(_WIN32) || defined(__CYGWIN__) || defined(__DJGPP__)
 
 /* Subroutine of choose_tmpdir.
    If BASE is non-NULL, return it.
@@ -106,7 +121,7 @@ choose_tmpdir (void)
 {
   if (!memoized_tmpdir)
     {
-#if !defined(_WIN32) || defined(__CYGWIN__)
+#if !defined(_WIN32) || defined(__CYGWIN__) || defined(__DJGPP__)
       const char *base = 0;
       char *tmpdir;
       unsigned int len;
@@ -142,7 +157,8 @@ choose_tmpdir (void)
       len = strlen (base);
       tmpdir = XNEWVEC (char, len + 2);
       strcpy (tmpdir, base);
-      tmpdir[len] = DIR_SEPARATOR;
+      if (len > 0 && !IS_DIR_SEPARATOR(tmpdir[len - 1]))
+        tmpdir[len] = DIR_SEPARATOR;
       tmpdir[len+1] = '\0';
       memoized_tmpdir = tmpdir;
 #else /* defined(_WIN32) && !defined(__CYGWIN__) */

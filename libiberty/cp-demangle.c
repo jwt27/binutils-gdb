@@ -2952,7 +2952,7 @@ d_parmlist (struct d_info *di)
 /* <bare-function-type> ::= [J]<type>+  */
 
 static struct demangle_component *
-d_bare_function_type (struct d_info *di, int has_return_type)
+d_bare_function_type (struct d_info *di, int has_return_type_flag)
 {
   struct demangle_component *return_type;
   struct demangle_component *tl;
@@ -2964,10 +2964,10 @@ d_bare_function_type (struct d_info *di, int has_return_type)
   if (peek == 'J')
     {
       d_advance (di, 1);
-      has_return_type = 1;
+      has_return_type_flag = 1;
     }
 
-  if (has_return_type)
+  if (has_return_type_flag)
     {
       return_type = cplus_demangle_type (di);
       if (return_type == NULL)
@@ -3325,22 +3325,22 @@ d_expression_1 (struct d_info *di)
   else if (peek == 'f' && d_peek_next_char (di) == 'p')
     {
       /* Function parameter used in a late-specified return type.  */
-      int index;
+      int lib_index;
       d_advance (di, 2);
       if (d_peek_char (di) == 'T')
 	{
 	  /* 'this' parameter.  */
 	  d_advance (di, 1);
-	  index = 0;
+	  lib_index = 0;
 	}
       else
 	{
-	  index = d_compact_number (di);
-	  if (index == INT_MAX || index == -1)
+	  lib_index = d_compact_number (di);
+	  if (lib_index == INT_MAX || lib_index == -1)
 	    return NULL;
-	  index++;
+	  lib_index++;
 	}
-      return d_make_function_param (di, index);
+      return d_make_function_param (di, lib_index);
     }
   else if (IS_DIGIT (peek)
 	   || (peek == 'o' && d_peek_next_char (di) == 'n'))
@@ -4685,7 +4685,7 @@ d_print_comp_inner (struct d_print_info *dpi, int options,
 
   /* Variable used to store the current templates while a previously
      captured scope is used.  */
-  struct d_print_template *saved_templates;
+  struct d_print_template *saved_templates = NULL;
 
   /* Nonzero if templates have been stored in the above variable.  */
   int need_template_restore = 0;
@@ -6273,7 +6273,7 @@ d_demangle_callback (const char *mangled, int options,
     }
   type;
   struct d_info di;
-  struct demangle_component *dc;
+  struct demangle_component *dc = NULL;
   int status;
 
   if (mangled[0] == '_' && mangled[1] == 'Z')

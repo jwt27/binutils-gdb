@@ -575,3 +575,57 @@
 
 /* Define as `fork' if `vfork' does not work. */
 #undef vfork
+
+#ifdef __DJGPP__
+# if defined (__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 8))
+#  define __gnuc_extension__  __extension__
+# else
+#  define __gnuc_extension__
+# endif
+
+/*
+ *  (ENOTSUP and EOPNOTSUPP have the same value on Linux,
+ *  but according to POSIX.1 these error values should be
+ *  distinct.)
+ */
+
+# if !defined(ENOTSUP) && defined(EOPNOTSUPP)
+#  define ENOTSUP  EOPNOTSUPP
+# endif
+
+/* Values taken from FreeBSD.  */
+# ifndef ENOTSUP
+#  define ENOTSUP  9926  /* Operation not supported (POSIX.1-2001).  */
+# endif
+
+# ifndef EOPNOTSUPP
+#  define EOPNOTSUPP  9929  /* Operation not supported on socket (POSIX.1-2001).  */
+# endif
+
+# undef  IS_SLASH
+# define IS_SLASH(c)                ((c) == '/' || (c) == '\\')
+# undef  IS_DIRECTORY_SEPARATOR
+# define IS_DIRECTORY_SEPARATOR(c)  (IS_SLASH(c) || (c) == ':')
+
+# include <libc/unconst.h>
+# define STRIP_FULL_PATH_AND_EXTENSION(file_name)   \
+  (__gnuc_extension__                               \
+    ({                                              \
+       char *_dst, *_src;                           \
+       _dst = _src = unconst((file_name), char *);  \
+       while (*_src++)                              \
+         ;                                          \
+       while ((_src - _dst) && (*--_src != '.'))    \
+         ;                                          \
+       for (*_src = '\0'; (_src - _dst); _src--)    \
+         if (IS_DIRECTORY_SEPARATOR(*_src))         \
+           break;                                   \
+       if (_src - _dst)                             \
+         while ((*_dst++ = *++_src))                \
+           ;                                        \
+       (file_name);                                 \
+    })                                              \
+  )
+#else  /* !__DJGPP__ */
+# define STRIP_FULL_PATH_AND_EXTENSION(file_name)  (file_name)
+#endif  /* !__DJGPP__ */

@@ -27,6 +27,7 @@
 #include <byteswap.h>
 #else
 
+#ifndef __DJGPP__
 /* Provide our own versions of the byteswap functions.  */
 static inline uint16_t
 bswap_16 (uint16_t v)
@@ -61,6 +62,62 @@ bswap_64 (uint64_t v)
 	  | ((v & 0x000000000000ff00ULL) << 40)
 	  | ((v & 0x00000000000000ffULL) << 56));
 }
+#else  /* __DJGPP__ */
+
+/*  The inline functions make trouble with diferent versions of gcc thus use macros.  */
+# if defined (__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 8))
+#  define __gnuc_extension__  __extension__
+# else
+#  define __gnuc_extension__
+# endif
+
+# define bswap_identity_64(v)                                      \
+  (__gnuc_extension__                                              \
+    ({                                                             \
+       uint64_t value = (v);                                       \
+       value;                                                      \
+    })                                                             \
+  )
+
+# define bswap_16(v)                                               \
+  (__gnuc_extension__                                              \
+    ({                                                             \
+       uint16_t _v = (v);                                          \
+       uint16_t value = (  ((_v >> 8) & 0xFF)                      \
+                         | ((_v & 0xFF) << 8));                    \
+       value;                                                      \
+    })                                                             \
+  )
+
+# define bswap_32(v)                                               \
+  (__gnuc_extension__                                              \
+    ({                                                             \
+       uint32_t _v = (v);                                          \
+       uint32_t value = (  ((_v & 0xFF000000) >> 24)               \
+                         | ((_v & 0x00FF0000) >>  8)               \
+                         | ((_v & 0x0000FF00) <<  8)               \
+                         | ((_v & 0x000000FF) << 24));             \
+       value;                                                      \
+    })                                                             \
+  )
+
+# define bswap_64(v)                                               \
+  (__gnuc_extension__                                              \
+    ({                                                             \
+       uint64_t _v = (v);                                          \
+       uint64_t value = (  ((_v & 0xFF00000000000000ULL) >> 56)    \
+                         | ((_v & 0x00FF000000000000ULL) >> 40)    \
+                         | ((_v & 0x0000FF0000000000ULL) >> 24)    \
+                         | ((_v & 0x000000FF00000000ULL) >>  8)    \
+                         | ((_v & 0x00000000FF000000ULL) <<  8)    \
+                         | ((_v & 0x0000000000FF0000ULL) << 24)    \
+                         | ((_v & 0x000000000000FF00ULL) << 40)    \
+                         | ((_v & 0x00000000000000FFULL) << 56));  \
+       value;                                                      \
+    })                                                             \
+  )
+#endif /* __DJGPP__ */
+
 #endif /* !defined(HAVE_BYTESWAP_H) */
 
 #endif /* !defined(_CTF_SWAP_H) */

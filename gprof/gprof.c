@@ -198,7 +198,13 @@ main (int argc, char **argv)
   textdomain (PACKAGE);
 #endif
 
-  whoami = argv[0];
+#if defined (COFF_GO32_EXE) || defined (COFF_GO32)
+  /*  This call is necessary to check if coff
+      64k relocation support shall be enabled or not.  */
+  bfd_init ();
+#endif
+
+  whoami = STRIP_FULL_PATH_AND_EXTENSION(argv[0]);
   xmalloc_set_program_name (whoami);
 
   expandargv (&argc, &argv);

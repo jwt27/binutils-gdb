@@ -53,6 +53,9 @@
 { COFF_SECTION_NAME_PARTIAL_MATCH (".gnu.linkonce.wi"), \
   COFF_ALIGNMENT_FIELD_EMPTY, COFF_ALIGNMENT_FIELD_EMPTY, 0 }
 
+/* Section contains extended relocations. */
+#define IMAGE_SCN_LNK_NRELOC_OVFL  0x01000000
+
 #include "sysdep.h"
 #include "bfd.h"
 
@@ -101,6 +104,10 @@ static bfd_boolean
   go32_stubbed_coff_bfd_copy_private_bfd_data (bfd *, bfd *);
 
 #define coff_bfd_copy_private_bfd_data go32_stubbed_coff_bfd_copy_private_bfd_data
+
+bfd_boolean _bfd_go32_mkobject (bfd *abfd);
+
+#define coff_mkobject  _bfd_go32_mkobject
 
 #include "coff-i386.c"
 
@@ -421,4 +428,30 @@ go32_check_format (bfd *abfd)
     return NULL;
 
   return coff_object_p (abfd);
+}
+
+/*  This function is not static because it is used
+    by both targets coff-go32 and coff-go32-exe.  */
+
+bfd_boolean
+_bfd_go32_mkobject (bfd *abfd)
+{
+  coff_data_type *coff;
+  bfd_size_type amt = sizeof (coff_data_type);
+
+  abfd->tdata.coff_obj_data = bfd_zalloc (abfd, amt);
+  if (abfd->tdata.coff_obj_data == NULL)
+    return FALSE;
+  coff = coff_data (abfd);
+  coff->symbols = NULL;
+  coff->conversion_table = NULL;
+  coff->raw_syments = NULL;
+  coff->relocbase = 0;
+  coff->local_toc_sym_map = 0;
+
+  /* Setting go32 does not only identify a go32 bfd
+     but also that more than 64k relocations are supported.  */
+  coff->go32 = coff_64k_relocation_enabled ? 1 : 0;
+
+  return TRUE;
 }

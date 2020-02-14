@@ -65,6 +65,123 @@ static search_dirs_type **search_tail_ptr = &search_head;
 static search_arch_type *search_arch_head;
 static search_arch_type **search_arch_tail_ptr = &search_arch_head;
 
+
+#ifdef __DJGPP__
+/*  Map library long filename to a library short filename according
+    to the filename table stored in /dev/env/DJDIR/lib/libnames.tab.  */
+
+static bfd_boolean
+map_LFN_to_SFN (const char **filename)
+{
+  static char **table = NULL;
+  static int last_index = 0;
+
+
+  /*
+   *  Initialize library name table from libnames.tab content.
+   */
+  if (!table)
+  {
+    FILE *map = fopen ("/dev/env/DJDIR/lib/libnames.tab", "r");
+
+    if (map)
+    {
+      char line[128];
+      int i = 0;
+
+      while (fscanf(map, "%[^\n]\n", line) != EOF)
+      {
+        if (line[0] == '#')
+          continue;
+        else
+          i++;
+      }
+
+      if (i)
+      {
+        last_index = 2 * i;
+        table = xmalloc(last_index * sizeof(char *));
+
+        i = 0;
+        rewind(map);
+        while (fscanf(map, "%[^\n]\n", line) != EOF)
+        {
+          if (line[0] != '#')
+          {
+            char long_name[FILENAME_MAX + 1], short_name[FILENAME_MAX + 1];
+
+            sscanf(line, "%s %s", long_name, short_name);
+            table[i++] = concat(long_name, (const char *) NULL);
+            table[i++] = concat(short_name, (const char *) NULL);
+          }
+        }
+      }
+
+      fclose(map);
+    }
+    else if (verbose)
+      info_msg(_("cannot find \"/dev/env/DJDIR/lib/libnames.tab\"\n"));
+  }
+
+
+  /*
+   *  Map library LFN to SFN using the table read from libnames.tab content.
+   */
+  if (table)
+  {
+    char *extension, *libname, *prefix = concat(*filename, (const char *)NULL);
+    int i;
+
+    /*  Strip library prefix and suffix.  */
+    for (libname = prefix, i = 0; libname[i]; i++)
+      ;
+
+#define IS_DOT_A_SUFFIX(filename)  ((filename)[--i] == 'a' && (filename)[--i] == '.')
+#define IS_LIB_PREFIX(filename)    ((filename)[--i] == 'b' && (filename)[--i] == 'i' && (filename)[--i] == 'l')
+    while (i)
+      if (IS_DOT_A_SUFFIX(libname))
+      {
+        libname[i] = '\0';
+        extension = libname + i;
+        break;
+      }
+    while (i)
+      if (IS_LIB_PREFIX(libname))
+      {
+        if (i == 0)
+        {
+          libname += 3;
+          break;
+        }
+        if (libname[--i] == '/')
+        {
+          libname += i + 4;
+          break;
+        }
+      }
+#undef IS_DOT_A_SUFFIX
+#undef IS_LIB_PREFIX
+
+    for (i = 0; i < last_index; i++)
+      if (strcmp(libname, table[i++]) == 0)
+      {
+        /*  Create a short filename for the library.  */
+        *libname = '\0';
+        *extension = '.';
+        *filename = concat(prefix, table[i], extension, (const char *)NULL);
+        if (verbose)
+          info_msg(_("mapped \"%s\" to \"%s\"\n"), table[i - 1], table[i]);
+
+        return TRUE;
+      }
+
+    free(prefix);
+  }
+
+  return FALSE;
+}
+#endif  /* __DJGPP__ */
+
 /* Test whether a pathname, after canonicalization, is the same or a
    sub-directory of the sysroot directory.  */
 
@@ -125,7 +242,18 @@ bfd_boolean
 ldfile_try_open_bfd (const char *attempt,
 		     lang_input_statement_type *entry)
 {
+#ifdef __DJGPP__
+  bfd_boolean already_tried_SFN = FALSE;
+
+again:
+#endif  /* __DJGPP__ */
+
   entry->the_bfd = bfd_openr (attempt, entry->target);
+
+#ifdef __DJGPP__
+  if (!entry->the_bfd && !already_tried_SFN && (already_tried_SFN = map_LFN_to_SFN(&attempt)))
+    goto again;
+#endif  /* __DJGPP__ */
 
   if (verbose)
     {
@@ -372,7 +500,7 @@ ldfile_open_file_search (const char *arch,
 			 arch, suffix, (const char *) NULL);
       else
 	string = concat (search->name, slash, entry->filename,
-			 (const char *) 0);
+			 (const char *) NULL);
 
       if (ldfile_try_open_bfd (string, entry))
 	{

@@ -45,7 +45,11 @@ static int arc_mmap_writeout (int fd, void *header, size_t headersz,
 static int arc_mmap_unmap (void *header, size_t headersz, const char **errmsg);
 
 /* bsearch() internal state.  */
+#if (HAVE_TSL_SUPPORT - 1) == 0
 static __thread char *search_nametbl;
+#else
+static char *search_nametbl;
+#endif
 
 /* Write out a CTF archive to the start of the file referenced by the passed-in
    fd.  The entries in CTF_FILES are referenced by name: the names are passed in

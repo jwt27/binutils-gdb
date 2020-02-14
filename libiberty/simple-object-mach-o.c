@@ -426,7 +426,7 @@ simple_object_mach_o_segment (simple_object_read *sobj, off_t offset,
   unsigned int sections_index;
   char *strtab;
   char *nametab;
-  unsigned char *index;
+  unsigned char *lib_index;
   size_t strtab_size;
   size_t nametab_size;
   size_t index_size;
@@ -546,13 +546,13 @@ simple_object_mach_o_segment (simple_object_read *sobj, off_t offset,
       simple_object_mach_o_section_info (omr->is_big_endian, is_32,
 					 secdata + index_index * sechdrsize,
 					 &index_offset, &index_size);
-      index = XNEWVEC (unsigned char, index_size);
+      lib_index = XNEWVEC (unsigned char, index_size);
       if (!simple_object_internal_read (sobj->descriptor,
 					sobj->offset + index_offset,
-					index, index_size,
+					lib_index, index_size,
 					errmsg, err))
 	{
-	  XDELETEVEC (index);
+	  XDELETEVEC (lib_index);
 	  XDELETEVEC (nametab);
 	  XDELETEVEC (secdata);
 	  return 0;
@@ -572,7 +572,7 @@ simple_object_mach_o_segment (simple_object_read *sobj, off_t offset,
     }
   else
     {
-      index = NULL;
+      lib_index = NULL;
       index_size = 0;
       nametab = NULL;
       nametab_size = 0;
@@ -595,7 +595,7 @@ simple_object_mach_o_segment (simple_object_read *sobj, off_t offset,
 					errmsg, err))
 	{
 	  XDELETEVEC (strtab);
-	  XDELETEVEC (index);
+	  XDELETEVEC (lib_index);
 	  XDELETEVEC (nametab);
 	  XDELETEVEC (secdata);
 	  return 0;
@@ -645,9 +645,9 @@ simple_object_mach_o_segment (simple_object_read *sobj, off_t offset,
 	      for (j = 0; j < n_wrapped_sects; ++j)
 		{
 		  unsigned int subsect_offset, subsect_length, name_offset;
-		  subsect_offset = (*fetch_32) (index + 16 * j);
-		  subsect_length = (*fetch_32) (index + 16 * j + 4);
-		  name_offset = (*fetch_32) (index + 16 * j + 8);
+		  subsect_offset = (*fetch_32) (lib_index + 16 * j);
+		  subsect_length = (*fetch_32) (lib_index + 16 * j + 4);
+		  name_offset = (*fetch_32) (lib_index + 16 * j + 8);
 		  /* We don't need the name_length yet.  */
 
 		  secoffset = wrapper_sect_offset + subsect_offset;
@@ -658,7 +658,7 @@ simple_object_mach_o_segment (simple_object_read *sobj, off_t offset,
 		    {
 		      *errmsg = NULL;
 		      *err = 0;
-		      XDELETEVEC (index);
+		      XDELETEVEC (lib_index);
 		      XDELETEVEC (nametab);
 		      XDELETEVEC (strtab);
 		      XDELETEVEC (secdata);
@@ -685,7 +685,7 @@ simple_object_mach_o_segment (simple_object_read *sobj, off_t offset,
 		    {
 		      *errmsg = "section name offset out of range";
 		      *err = 0;
-		      XDELETEVEC (index);
+		      XDELETEVEC (lib_index);
 		      XDELETEVEC (nametab);
 		      XDELETEVEC (strtab);
 		      XDELETEVEC (secdata);
@@ -717,7 +717,7 @@ simple_object_mach_o_segment (simple_object_read *sobj, off_t offset,
 	{
 	  *errmsg = NULL;
 	  *err = 0;
-	  XDELETEVEC (index);
+	  XDELETEVEC (lib_index);
 	  XDELETEVEC (nametab);
 	  XDELETEVEC (strtab);
 	  XDELETEVEC (secdata);
@@ -725,7 +725,7 @@ simple_object_mach_o_segment (simple_object_read *sobj, off_t offset,
 	}
     }
 
-  XDELETEVEC (index);
+  XDELETEVEC (lib_index);
   XDELETEVEC (nametab);
   XDELETEVEC (strtab);
   XDELETEVEC (secdata);
@@ -1045,7 +1045,7 @@ simple_object_mach_o_write_segment (simple_object_write *sobj, int descriptor,
   unsigned char hdrbuf[sizeof (struct mach_o_segment_command_64)];
   unsigned char *hdr;
   size_t nsects_in;
-  unsigned int *index;
+  unsigned int *lib_index;
   char *snames;
   unsigned int sect;
 
@@ -1090,7 +1090,7 @@ simple_object_mach_o_write_segment (simple_object_write *sobj, int descriptor,
 	 since the size of a mach-o MH_OBJECT cannot exceed 4G owing to
 	 other constraints.  */
 
-      index = XNEWVEC (unsigned int, nsects_in * 4);
+      lib_index = XNEWVEC (unsigned int, nsects_in * 4);
 
       /* We now need to figure out the size of the names section.  This just
 	 stores the names as null-terminated c strings, packed without any
@@ -1099,8 +1099,8 @@ simple_object_mach_o_write_segment (simple_object_write *sobj, int descriptor,
       for (section = sobj->sections, sect = 0; section != NULL;
 	   section = section->next, sect++)
 	{
-	  index[sect*4+2] = name_offset;
-	  index[sect*4+3] = strlen (section->name) + 1;
+	  lib_index[sect*4+2] = name_offset;
+	  lib_index[sect*4+3] = strlen (section->name) + 1;
 	  name_offset += strlen (section->name) + 1;
 	}
       snames = XNEWVEC (char, name_offset);
@@ -1108,7 +1108,7 @@ simple_object_mach_o_write_segment (simple_object_write *sobj, int descriptor,
   else
     {
       *nsects = nsects_in;
-      index = NULL;
+      lib_index = NULL;
       snames = NULL;
     }
 
@@ -1131,16 +1131,16 @@ simple_object_mach_o_write_segment (simple_object_write *sobj, int descriptor,
       while (new_offset > offset)
 	{
 	  unsigned char zeroes[16];
-	  size_t write;
+	  size_t lib_write;
 
 	  memset (zeroes, 0, sizeof zeroes);
-	  write = new_offset - offset;
-	  if (write > sizeof zeroes)
-	    write = sizeof zeroes;
-	  if (!simple_object_internal_write (descriptor, offset, zeroes, write,
+	  lib_write = new_offset - offset;
+	  if (lib_write > sizeof zeroes)
+	    lib_write = sizeof zeroes;
+	  if (!simple_object_internal_write (descriptor, offset, zeroes, lib_write,
 					     errmsg, err))
 	    return 0;
-	  offset += write;
+	  offset += lib_write;
 	}
 
       secsize = 0;
@@ -1156,11 +1156,11 @@ simple_object_mach_o_write_segment (simple_object_write *sobj, int descriptor,
 
       if (sobj->segment_name != NULL)
 	{
-	  index[sect*4+0] = (unsigned int) offset;
-	  index[sect*4+1] = secsize;
+	  lib_index[sect*4+0] = (unsigned int) offset;
+	  lib_index[sect*4+1] = secsize;
 	  /* Stash the section name in our table.  */
-	  memcpy (snames + index[sect * 4 + 2], section->name,
-		  index[sect * 4 + 3]);
+	  memcpy (snames + lib_index[sect * 4 + 2], section->name,
+		  lib_index[sect * 4 + 3]);
 	}
       else
 	{
@@ -1207,13 +1207,13 @@ simple_object_mach_o_write_segment (simple_object_write *sobj, int descriptor,
       /* Account for any initial aligment - which becomes the alignment for this
 	 created section.  */
 
-      secsize = (offset - index[0]);
+      secsize = (offset - lib_index[0]);
       if (!simple_object_mach_o_write_section_header (sobj, descriptor,
 						      sechdr_offset,
 						      GNU_WRAPPER_SECTS,
 						      sobj->segment_name,
 						      0 /*secaddr*/,
-						      secsize, index[0],
+						      secsize, lib_index[0],
 						      sobj->sections->align,
 						      errmsg, err))
 	return 0;
@@ -1222,8 +1222,8 @@ simple_object_mach_o_write_segment (simple_object_write *sobj, int descriptor,
 	 section.  */
 
       for (i = 1; i < nsects_in; ++i)
-	index[4 * i] -= index[0];
-      index[0] = 0;
+	lib_index[4 * i] -= lib_index[0];
+      lib_index[0] = 0;
 
       sechdr_offset += sechdrsize;
 
@@ -1268,11 +1268,11 @@ simple_object_mach_o_write_segment (simple_object_write *sobj, int descriptor,
 
       /* ... and the content.. */
       if (!simple_object_internal_write (descriptor, offset,
-					 (const unsigned char *) index,
+					 (const unsigned char *) lib_index,
 					 nsects_in*16, errmsg, err))
 	return 0;
 
-      XDELETEVEC (index);
+      XDELETEVEC (lib_index);
       XDELETEVEC (snames);
     }
 

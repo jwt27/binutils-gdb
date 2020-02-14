@@ -586,7 +586,12 @@ print_symbol (signed int width, const char *symbol)
 	  /* Try to find out how many bytes made up the character that was
 	     just printed.  Advance the symbol pointer past the bytes that
 	     were displayed.  */
+#ifdef __DJGPP__
+	  /* DJGPP does not provide mbrtowc.  */
+	  n = mbtowc (& w, symbol - 1, MB_CUR_MAX);
+#else
 	  n = mbrtowc (& w, symbol - 1, MB_CUR_MAX, & state);
+#endif
 #else
 	  n = 1;
 #endif

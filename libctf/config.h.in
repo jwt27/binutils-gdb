@@ -155,3 +155,33 @@
 
 /* Define to 1 if you need to in order for `stat' and other things to work. */
 #undef _POSIX_SOURCE
+
+#ifdef __DJGPP__
+/*  gcc no longer includes this by default.  */
+# include <sys/version.h>
+
+/*
+ *  (ENOTSUP and EOPNOTSUPP have the same value on Linux,
+ *  but according to POSIX.1 these error values should be
+ *  distinct.)
+ */
+
+# if !defined(ENOTSUP) && defined(EOPNOTSUPP)
+#  define ENOTSUP  EOPNOTSUPP
+# endif
+
+/* Values taken from FreeBSD.  */
+# ifndef ENOTSUP
+#  define ENOTSUP  9926  /* Operation not supported (POSIX.1-2001).  */
+# endif
+
+# undef  DJGPP_GCC_VERSION
+# define DJGPP_GCC_VERSION  ((__GNUC__) * 10000 + (__GNUC_MINOR__) * 100 + (__GNUC_PATCHLEVEL__))
+# if DJGPP_GCC_VERSION < 40300
+#  define HAVE_TSL_SUPPORT  0
+# else
+#  define HAVE_TSL_SUPPORT  1
+# endif  /* DJGPP_GCC_VERSION */
+# undef DJGPP_GCC_VERSION
+
+#endif  /* __DJGPP__ */
