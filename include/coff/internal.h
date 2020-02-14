@@ -58,8 +58,6 @@ struct internal_extra_pe_filehdr
   bfd_vma  nt_signature;   	/* required NT signature, 0x4550 */
 };
 
-#define GO32_STUBSIZE 2048
-
 struct internal_filehdr
 {
   struct internal_extra_pe_filehdr pe;
@@ -69,7 +67,7 @@ struct internal_filehdr
 
      F_GO32STUB is set iff go32stub contains a valid data.  Artifical headers
      created in BFD have no pre-set go32stub.  */
-  char go32stub[GO32_STUBSIZE];
+  char* go32stub;
 
   /* Standard coff internal info.  */
   unsigned short f_magic;	/* magic number			*/

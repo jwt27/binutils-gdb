@@ -17,10 +17,16 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
+#define GO32_MAX_STUBSIZE 8192
+
 struct external_filehdr_go32_exe
   {
-    char stub[GO32_STUBSIZE]; /* the stub to load the image */
-			/* the standard COFF header     */
+    char hdr_data[GO32_MAX_STUBSIZE + 20];  /* first 8k including stub
+                                               and COFF header */
+
+                        /* the standard COFF header     */
+                        /* the offset of these fields does not
+                           correspond with their offset in the file */
     char f_magic[2];	/* magic number			*/
     char f_nscns[2];	/* number of sections		*/
     char f_timdat[4];	/* time & date stamp		*/
@@ -33,4 +39,4 @@ struct external_filehdr_go32_exe
 #undef FILHDR
 #define	FILHDR	struct external_filehdr_go32_exe
 #undef FILHSZ
-#define	FILHSZ	GO32_STUBSIZE+20
+#define	FILHSZ	sizeof(FILHDR)

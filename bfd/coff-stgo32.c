@@ -64,11 +64,13 @@
    of the function and the ...POST functions at the end of the swap routines.  */
 
 static void
+adjust_filehdr_in_pre   (bfd *, void *, void *);
+static void
 adjust_filehdr_in_post  (bfd *, void *, void *);
 static void
 adjust_filehdr_out_pre  (bfd *, void *, void *);
 static void
-adjust_filehdr_out_post  (bfd *, void *, void *);
+adjust_filehdr_out_post (bfd *, void *, void *);
 static void
 adjust_scnhdr_in_post  (bfd *, void *, void *);
 static void
@@ -84,6 +86,7 @@ adjust_aux_out_post (bfd *, void *, int, int, int, int, void *);
 static void
 create_go32_stub (bfd *);
 
+#define COFF_ADJUST_FILEHDR_IN_PRE adjust_filehdr_in_pre
 #define COFF_ADJUST_FILEHDR_IN_POST adjust_filehdr_in_post
 #define COFF_ADJUST_FILEHDR_OUT_PRE adjust_filehdr_out_pre
 #define COFF_ADJUST_FILEHDR_OUT_POST adjust_filehdr_out_post
@@ -111,14 +114,16 @@ bfd_boolean _bfd_go32_mkobject (bfd *abfd);
 
 #include "coff-i386.c"
 
+#define GO32_STUBSIZE_DEFAULT 2048
+#define GO32_STUBSIZE (bfd_coff_filhsz(abfd) - 20)
+
 /* This macro is used, because I cannot assume the endianness of the
    host system.  */
 #define _H(index) (H_GET_16 (abfd, (header + index * 2)))
 
 /* These bytes are a 2048-byte DOS executable, which loads the COFF
    image into memory and then runs it. It is called 'stub'.  */
-
-static const unsigned char stub_bytes[GO32_STUBSIZE] =
+static const unsigned char stub_bytes[GO32_STUBSIZE_DEFAULT] =
 {
 #include "go32stub.h"
 };
@@ -137,9 +142,35 @@ static const unsigned char stub_bytes[GO32_STUBSIZE] =
   if (val != 0) val += diff
 
 static void
-adjust_filehdr_in_post  (bfd *  abfd ATTRIBUTE_UNUSED,
-			 void * src,
-			 void * dst)
+adjust_filehdr_in_pre  (bfd *  abfd,
+                        void * src,
+                        void * dst ATTRIBUTE_UNUSED)
+{
+  FILHDR *filehdr_src = (FILHDR *) src;
+
+  const char* p = filehdr_src->hdr_data;
+  const uint16_t mz_num_pages = H_GET_16(abfd, p + 4);
+  const uint16_t mz_last_page_size = H_GET_16(abfd, p + 2);
+
+  bfd_size_type stubsize = mz_num_pages * 512;
+  if (mz_last_page_size != 0) stubsize += mz_last_page_size - 512;
+
+  p += stubsize;
+  memcpy(filehdr_src->f_flags,  p + 18, 2);
+  memcpy(filehdr_src->f_opthdr, p + 16, 2);
+  memcpy(filehdr_src->f_nsyms,  p + 12, 4);
+  memcpy(filehdr_src->f_symptr, p + 8,  4);
+  memcpy(filehdr_src->f_timdat, p + 4,  4);
+  memcpy(filehdr_src->f_nscns,  p + 2,  2);
+  memcpy(filehdr_src->f_magic,  p + 0,  2);
+
+  bfd_coff_filhsz(abfd) = stubsize + 20;
+}
+
+static void
+adjust_filehdr_in_post  (bfd *  abfd,
+                         void * src,
+                         void * dst)
 {
   FILHDR *filehdr_src = (FILHDR *) src;
   struct internal_filehdr *filehdr_dst = (struct internal_filehdr *) dst;
@@ -149,7 +180,8 @@ adjust_filehdr_in_post  (bfd *  abfd ATTRIBUTE_UNUSED,
   /* Save now the stub to be used later.  Put the stub data to FILEHDR_DST
      first as coff_data (abfd) still does not exist.  It may not even be ever
      created as we are just checking the file format of ABFD.  */
-  memcpy (filehdr_dst->go32stub, filehdr_src->stub, GO32_STUBSIZE);
+  filehdr_dst->go32stub = bfd_alloc (abfd, (bfd_size_type) GO32_STUBSIZE); /* TODO: check for null, TODO: free */
+  memcpy (filehdr_dst->go32stub, filehdr_src->hdr_data, GO32_STUBSIZE);
   filehdr_dst->f_flags |= F_GO32STUB;
 }
 
@@ -164,10 +196,13 @@ adjust_filehdr_out_pre  (bfd * abfd, void * in, void * out)
 
   /* Copy the stub to the file header.  */
   if (coff_data (abfd)->go32stub != NULL)
-    memcpy (filehdr_out->stub, coff_data (abfd)->go32stub, GO32_STUBSIZE);
+    memcpy (filehdr_out->hdr_data, coff_data(abfd)->go32stub, GO32_STUBSIZE);
   else
-    /* Use the default.  */
-    memcpy (filehdr_out->stub, stub_bytes, GO32_STUBSIZE);
+    {
+      /* Use the default.  */
+      bfd_coff_filhsz(abfd) = GO32_STUBSIZE_DEFAULT;
+      memcpy (filehdr_out->hdr_data, stub_bytes, GO32_STUBSIZE);
+    }
 
   ADJUST_VAL (filehdr_in->f_symptr, -GO32_STUBSIZE);
 }
@@ -178,8 +213,18 @@ adjust_filehdr_out_post  (bfd *  abfd ATTRIBUTE_UNUSED,
 			  void * out ATTRIBUTE_UNUSED)
 {
   struct internal_filehdr *filehdr_in = (struct internal_filehdr *) in;
+  FILHDR *filehdr_out = (FILHDR *) out;
   /* Undo the above change.  */
   ADJUST_VAL (filehdr_in->f_symptr, GO32_STUBSIZE);
+
+  char* p = filehdr_out->hdr_data + GO32_STUBSIZE;
+  memcpy(p + 0,  filehdr_out->f_magic,  2);
+  memcpy(p + 2,  filehdr_out->f_nscns,  2);
+  memcpy(p + 4,  filehdr_out->f_timdat, 4);
+  memcpy(p + 8,  filehdr_out->f_symptr, 4);
+  memcpy(p + 12, filehdr_out->f_nsyms,  4);
+  memcpy(p + 16, filehdr_out->f_opthdr, 2);
+  memcpy(p + 18, filehdr_out->f_flags,  2);
 }
 
 static void
@@ -282,7 +327,9 @@ adjust_aux_out_post (bfd *abfd ATTRIBUTE_UNUSED,
    file.
 
    If there was any error, the standard stub (compiled in this file)
-   is taken.  */
+   is taken.
+
+   TODO: run stubify -g to generate a stub */
 
 static void
 create_go32_stub (bfd *abfd)
@@ -330,13 +377,6 @@ create_go32_stub (bfd *abfd)
       if (_H (1))
 	coff_start += (long) _H (1) - 512L;
 
-      /* Currently there is only a fixed stub size of 2048 bytes
-	 supported.  */
-      if (coff_start != 2048)
-	{
-	  close (f);
-	  goto stub_end;
-	}
       exe_start = _H (4) * 16;
       if ((long) lseek (f, exe_start, SEEK_SET) != exe_start)
 	{
@@ -368,6 +408,7 @@ create_go32_stub (bfd *abfd)
 	  coff_data (abfd)->go32stub = NULL;
 	}
       close (f);
+      bfd_coff_filhsz(abfd) = coff_start;
     }
 stub_end:
   /* There was something wrong above, so use now the standard builtin
@@ -400,12 +441,12 @@ go32_stubbed_coff_bfd_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
      optionally allocate the output stub.  */
   if (coff_data (obfd)->go32stub == NULL)
     coff_data (obfd)->go32stub = bfd_alloc (obfd,
-					  (bfd_size_type) GO32_STUBSIZE);
+					  (bfd_size_type) bfd_coff_filhsz(ibfd) - 20);
 
   /* Now copy the stub.  */
   if (coff_data (obfd)->go32stub != NULL)
     memcpy (coff_data (obfd)->go32stub, coff_data (ibfd)->go32stub,
-	    GO32_STUBSIZE);
+	    bfd_coff_filhsz(ibfd) - 20);
 
   return TRUE;
 }
