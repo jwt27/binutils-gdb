@@ -164,9 +164,9 @@ adjust_filehdr_in_pre  (bfd *  abfd,
   memcpy(filehdr_src->f_nscns,  p + 2,  2);
   memcpy(filehdr_src->f_magic,  p + 0,  2);
 
-  bfd_coff_filhsz(abfd) = stubsize + 20;
+  bfd_coff_filhsz (abfd) = stubsize + 20;
 
-  bfd_seek (abfd, bfd_coff_filhsz(abfd), SEEK_SET);
+  bfd_seek (abfd, bfd_coff_filhsz (abfd), SEEK_SET);
 }
 
 static void
@@ -198,11 +198,11 @@ adjust_filehdr_out_pre  (bfd * abfd, void * in, void * out)
 
   /* Copy the stub to the file header.  */
   if (coff_data (abfd)->go32stub != NULL)
-    memcpy (filehdr_out->hdr_data, coff_data(abfd)->go32stub, GO32_STUBSIZE);
+    memcpy (filehdr_out->hdr_data, coff_data (abfd)->go32stub, GO32_STUBSIZE);
   else
     {
       /* Use the default.  */
-      bfd_coff_filhsz(abfd) = GO32_STUBSIZE_DEFAULT;
+      bfd_coff_filhsz (abfd) = GO32_STUBSIZE_DEFAULT;
       memcpy (filehdr_out->hdr_data, stub_bytes, GO32_STUBSIZE);
     }
 
