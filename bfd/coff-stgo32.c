@@ -206,7 +206,7 @@ adjust_filehdr_out_pre  (bfd * abfd, void * in, void * out)
   else
     {
       /* Use the default.  */
-      bfd_coff_filhsz (abfd) = GO32_STUBSIZE_DEFAULT;
+      bfd_coff_filhsz (abfd) = GO32_STUBSIZE_DEFAULT + 20;
       memcpy (filehdr_out->hdr_data, stub_bytes, GO32_STUBSIZE);
     }
 
