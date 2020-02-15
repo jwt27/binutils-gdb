@@ -39,4 +39,4 @@ struct external_filehdr_go32_exe
 #undef FILHDR
 #define	FILHDR	struct external_filehdr_go32_exe
 #undef FILHSZ
-#define	FILHSZ	sizeof(FILHDR)
+#define	FILHSZ	(GO32_MAX_STUBSIZE + 20 + 20)

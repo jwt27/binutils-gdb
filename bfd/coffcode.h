@@ -4135,7 +4135,7 @@ coff_write_object_contents (bfd * abfd)
     char * buff;
     bfd_size_type amount = bfd_coff_filhsz (abfd);
 
-    buff = (char *) bfd_malloc (sizeof (FILHDR));
+    buff = (char *) bfd_malloc (FILHSZ);
     if (buff == NULL)
       return FALSE;
 
