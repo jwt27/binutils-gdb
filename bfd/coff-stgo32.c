@@ -186,8 +186,9 @@ adjust_filehdr_in_post  (bfd * abfd, void * src, void * dst)
   /* Save now the stub to be used later.  Put the stub data to FILEHDR_DST
      first as coff_data (abfd) still does not exist.  It may not even be ever
      created as we are just checking the file format of ABFD.  */
-  filehdr_dst->go32stub = bfd_alloc (abfd, (bfd_size_type) GO32_STUBSIZE); /* TODO: check for null, TODO: free */
-  memcpy (filehdr_dst->go32stub, filehdr_src->hdr_data, GO32_STUBSIZE);
+  filehdr_dst->go32stub = bfd_malloc ((bfd_size_type) GO32_STUBSIZE);
+  if (filehdr_dst->go32stub != NULL)
+    memcpy (filehdr_dst->go32stub, filehdr_src->hdr_data, GO32_STUBSIZE);
   filehdr_dst->f_flags |= F_GO32STUB;
 }
 

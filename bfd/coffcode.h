@@ -2114,10 +2114,13 @@ coff_mkobject_hook (bfd * abfd,
     {
       coff->go32stub = (char *) bfd_alloc (abfd, bfd_coff_filhsz(abfd) - 20);
       if (coff->go32stub == NULL)
-	return NULL;
+        coff = NULL;
     }
-  if (coff->go32stub != NULL)
+  if (coff != NULL && coff->go32stub != NULL)
     memcpy (coff->go32stub, internal_f->go32stub, bfd_coff_filhsz(abfd) - 20);
+
+  if (internal_f->go32stub != NULL)
+    free(internal_f->go32stub);
 
   return coff;
 }
