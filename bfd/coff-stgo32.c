@@ -189,7 +189,6 @@ adjust_filehdr_in_post  (bfd * abfd, void * src, void * dst)
   filehdr_dst->go32stub = bfd_malloc ((bfd_size_type) GO32_STUBSIZE);
   if (filehdr_dst->go32stub != NULL)
     memcpy (filehdr_dst->go32stub, filehdr_src->hdr_data, GO32_STUBSIZE);
-  filehdr_dst->f_flags |= F_GO32STUB;
 }
 
 static void
