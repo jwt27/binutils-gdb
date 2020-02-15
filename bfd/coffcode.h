@@ -2046,7 +2046,11 @@ coff_mkobject_hook (bfd * abfd,
   coff_data_type *coff;
 
   if (! coff_mkobject (abfd))
-    return NULL;
+    {
+      if (internal_f->go32stub != NULL)
+          free (internal_f->go32stub);
+      return NULL;
+    }
 
   coff = coff_data (abfd);
 
@@ -2117,7 +2121,7 @@ coff_mkobject_hook (bfd * abfd,
         memcpy (coff->go32stub, internal_f->go32stub, bfd_coff_filhsz(abfd) - 20);
       else
         coff = NULL;
-      free(internal_f->go32stub);
+      free (internal_f->go32stub);
     }
 
   return coff;
