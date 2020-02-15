@@ -17,11 +17,13 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
    MA 02110-1301, USA.  */
 
-#define GO32_MAX_STUBSIZE 8192
+/* If ever necessary, this value can be increased with no ill effects,
+   provided that it stays below the smallest practical EXE size. */
+#define GO32STUB_SIZE_MAX 8192
 
 struct external_filehdr_go32_exe
   {
-    char hdr_data[GO32_MAX_STUBSIZE + 20];  /* first 8k including stub
+    char hdr_data[GO32STUB_SIZE_MAX + 20];  /* first 8k including stub
                                                and COFF header */
 
                         /* the standard COFF header     */
@@ -39,4 +41,4 @@ struct external_filehdr_go32_exe
 #undef FILHDR
 #define	FILHDR	struct external_filehdr_go32_exe
 #undef FILHSZ
-#define	FILHSZ	(GO32_MAX_STUBSIZE + 20 + 20)
+#define	FILHSZ	(GO32STUB_SIZE_MAX + 20 + 20)
