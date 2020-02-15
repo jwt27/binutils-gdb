@@ -2112,12 +2112,12 @@ coff_mkobject_hook (bfd * abfd,
 
   if ((internal_f->f_flags & F_GO32STUB) != 0)
     {
-      coff->go32stub = (char *) bfd_alloc (abfd, bfd_coff_filhsz(abfd));
+      coff->go32stub = (char *) bfd_alloc (abfd, bfd_coff_filhsz(abfd) - 20);
       if (coff->go32stub == NULL)
 	return NULL;
     }
   if (coff->go32stub != NULL)
-    memcpy (coff->go32stub, internal_f->go32stub, bfd_coff_filhsz(abfd));
+    memcpy (coff->go32stub, internal_f->go32stub, bfd_coff_filhsz(abfd) - 20);
 
   return coff;
 }
