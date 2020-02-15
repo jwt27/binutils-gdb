@@ -148,6 +148,7 @@ adjust_filehdr_in_pre  (bfd *  abfd,
 {
   FILHDR *filehdr_src = (FILHDR *) src;
 
+  /* Read real stub size from MZ header */
   const char* p = filehdr_src->hdr_data;
   const uint16_t mz_num_pages = H_GET_16(abfd, p + 4);
   const uint16_t mz_last_page_size = H_GET_16(abfd, p + 2);
@@ -155,24 +156,27 @@ adjust_filehdr_in_pre  (bfd *  abfd,
   bfd_size_type stubsize = mz_num_pages * 512;
   if (mz_last_page_size != 0) stubsize += mz_last_page_size - 512;
 
+  /* Copy COFF header values from real location in header */
   p += stubsize;
   memcpy(filehdr_src->f_flags,  p + 18, 2);
   memcpy(filehdr_src->f_opthdr, p + 16, 2);
   memcpy(filehdr_src->f_nsyms,  p + 12, 4);
-  memcpy(filehdr_src->f_symptr, p + 8,  4);
-  memcpy(filehdr_src->f_timdat, p + 4,  4);
-  memcpy(filehdr_src->f_nscns,  p + 2,  2);
-  memcpy(filehdr_src->f_magic,  p + 0,  2);
+  memcpy(filehdr_src->f_symptr, p +  8, 4);
+  memcpy(filehdr_src->f_timdat, p +  4, 4);
+  memcpy(filehdr_src->f_nscns,  p +  2, 2);
+  memcpy(filehdr_src->f_magic,  p +  0, 2);
 
+  /* Set real header size in coff backend_data. Stub size + 20 bytes COFF header.
+     Note: this looks like assignment to a function, but it is a macro that expands to:
+     ((bfd_coff_backend_data *) abfd->xvec->backend_data)->_bfd_filhsz */
   bfd_coff_filhsz (abfd) = stubsize + 20;
 
+  /* Seek back to just past the COFF header */
   bfd_seek (abfd, bfd_coff_filhsz (abfd), SEEK_SET);
 }
 
 static void
-adjust_filehdr_in_post  (bfd *  abfd,
-                         void * src,
-                         void * dst)
+adjust_filehdr_in_post  (bfd * abfd, void * src, void * dst)
 {
   FILHDR *filehdr_src = (FILHDR *) src;
   struct internal_filehdr *filehdr_dst = (struct internal_filehdr *) dst;
@@ -210,27 +214,26 @@ adjust_filehdr_out_pre  (bfd * abfd, void * in, void * out)
 }
 
 static void
-adjust_filehdr_out_post  (bfd *  abfd ATTRIBUTE_UNUSED,
-			  void * in,
-			  void * out ATTRIBUTE_UNUSED)
+adjust_filehdr_out_post  (bfd * abfd, void * in, void * out)
 {
   struct internal_filehdr *filehdr_in = (struct internal_filehdr *) in;
   FILHDR *filehdr_out = (FILHDR *) out;
   /* Undo the above change.  */
   ADJUST_VAL (filehdr_in->f_symptr, GO32_STUBSIZE);
 
+  /* Copy COFF header values back into real header */
   char* p = filehdr_out->hdr_data + GO32_STUBSIZE;
-  memcpy(p + 0,  filehdr_out->f_magic,  2);
-  memcpy(p + 2,  filehdr_out->f_nscns,  2);
-  memcpy(p + 4,  filehdr_out->f_timdat, 4);
-  memcpy(p + 8,  filehdr_out->f_symptr, 4);
+  memcpy(p +  0, filehdr_out->f_magic,  2);
+  memcpy(p +  2, filehdr_out->f_nscns,  2);
+  memcpy(p +  4, filehdr_out->f_timdat, 4);
+  memcpy(p +  8, filehdr_out->f_symptr, 4);
   memcpy(p + 12, filehdr_out->f_nsyms,  4);
   memcpy(p + 16, filehdr_out->f_opthdr, 2);
   memcpy(p + 18, filehdr_out->f_flags,  2);
 }
 
 static void
-adjust_scnhdr_in_post  (bfd *  abfd ATTRIBUTE_UNUSED,
+adjust_scnhdr_in_post  (bfd *  abfd,
 			void * ext ATTRIBUTE_UNUSED,
 			void * in)
 {
@@ -242,7 +245,7 @@ adjust_scnhdr_in_post  (bfd *  abfd ATTRIBUTE_UNUSED,
 }
 
 static void
-adjust_scnhdr_out_pre  (bfd *  abfd ATTRIBUTE_UNUSED,
+adjust_scnhdr_out_pre  (bfd *  abfd,
 			void * in,
 			void * out ATTRIBUTE_UNUSED)
 {
@@ -254,7 +257,7 @@ adjust_scnhdr_out_pre  (bfd *  abfd ATTRIBUTE_UNUSED,
 }
 
 static void
-adjust_scnhdr_out_post (bfd *  abfd ATTRIBUTE_UNUSED,
+adjust_scnhdr_out_post (bfd *  abfd,
 			void * in,
 			void * out ATTRIBUTE_UNUSED)
 {
@@ -266,7 +269,7 @@ adjust_scnhdr_out_post (bfd *  abfd ATTRIBUTE_UNUSED,
 }
 
 static void
-adjust_aux_in_post (bfd * abfd ATTRIBUTE_UNUSED,
+adjust_aux_in_post (bfd * abfd,
 		    void * ext1 ATTRIBUTE_UNUSED,
 		    int type,
 		    int in_class,
@@ -284,7 +287,7 @@ adjust_aux_in_post (bfd * abfd ATTRIBUTE_UNUSED,
 }
 
 static void
-adjust_aux_out_pre (bfd *abfd ATTRIBUTE_UNUSED,
+adjust_aux_out_pre (bfd *abfd,
 		    void * inp,
 		    int type,
 		    int in_class,
@@ -302,7 +305,7 @@ adjust_aux_out_pre (bfd *abfd ATTRIBUTE_UNUSED,
 }
 
 static void
-adjust_aux_out_post (bfd *abfd ATTRIBUTE_UNUSED,
+adjust_aux_out_post (bfd *abfd,
 		     void * inp,
 		     int type,
 		     int in_class,
