@@ -47,11 +47,16 @@ SECTIONS
     ${RELOCATING+djgpp_first_ctor = . ;
     *(SORT(.ctors.*))
     *(.ctor)
+    *(.ctors)
     djgpp_last_ctor = . ;}
     ${RELOCATING+djgpp_first_dtor = . ;
     *(SORT(.dtors.*))
     *(.dtor)
+    *(.dtors)
     djgpp_last_dtor = . ;}
+    __environ = . ;
+    PROVIDE(_environ = .) ;
+    LONG(0) ;
     *(.data)
     ${RELOCATING+*(.data.*)}
 
@@ -74,6 +79,8 @@ SECTIONS
     ${RELOCATING+ end = . ; PROVIDE(_end = .) ;}
     ${RELOCATING+ . = ALIGN(${SEGMENT_SIZE});}
   }
+  /* Discard LTO sections.  */
+  /DISCARD/ : { *(.gnu.lto_*) }
   /* Stabs debugging sections.  */
   .stab 0 : { *(.stab) }
   .stabstr 0 : { *(.stabstr) }
