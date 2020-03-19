@@ -50,15 +50,15 @@
 #include "bfd.h"
 #include "coff/msdos.h"
 
-static bfd_cleanup go32_check_format (bfd *);
+static bfd_cleanup go32exe_check_format (bfd *);
 static bfd_boolean go32exe_write_object_contents (bfd *);
 static bfd_boolean go32exe_mkobject (bfd *);
-static bfd_boolean go32_stubbed_coff_bfd_copy_private_bfd_data (bfd *, bfd *);
+static bfd_boolean go32exe_copy_private_bfd_data (bfd *, bfd *);
 
-#define COFF_CHECK_FORMAT go32_check_format
+#define COFF_CHECK_FORMAT go32exe_check_format
 #define COFF_WRITE_CONTENTS go32exe_write_object_contents
 #define coff_mkobject go32exe_mkobject
-#define coff_bfd_copy_private_bfd_data go32_stubbed_coff_bfd_copy_private_bfd_data
+#define coff_bfd_copy_private_bfd_data go32exe_copy_private_bfd_data
 
 #include "coff-i386.c"
 
@@ -69,7 +69,7 @@ static bfd_boolean go32_stubbed_coff_bfd_copy_private_bfd_data (bfd *, bfd *);
 /* These bytes are a 2048-byte DOS executable, which loads the COFF
    image into memory and then runs it. It is called 'stub'.  */
 #define GO32EXE_DEFAULT_STUB_SIZE 2048
-static const unsigned char stub_bytes[GO32EXE_DEFAULT_STUB_SIZE] =
+static const unsigned char go32exe_default_stub[GO32EXE_DEFAULT_STUB_SIZE] =
 {
 #include "go32stub.h"
 };
@@ -94,7 +94,7 @@ static bfd_size_type go32exe_temp_stub_size = 0;
    a stub, like gcc does.  */
 
 static void
-create_go32_stub (bfd *abfd)
+go32exe_create_stub (bfd *abfd)
 {
   /* Do it only once.  */
   if (coff_data (abfd)->stub == NULL)
@@ -198,7 +198,7 @@ create_go32_stub (bfd *abfd)
 	= bfd_alloc (abfd, (bfd_size_type) GO32EXE_DEFAULT_STUB_SIZE);
       if (coff_data (abfd)->stub == NULL)
 	return;
-      memcpy (coff_data (abfd)->stub, stub_bytes,
+      memcpy (coff_data (abfd)->stub, go32exe_default_stub,
 	      GO32EXE_DEFAULT_STUB_SIZE);
       coff_data (abfd)->stub_size = GO32EXE_DEFAULT_STUB_SIZE;
     }
@@ -208,7 +208,7 @@ create_go32_stub (bfd *abfd)
    to the new obfd.  */
 
 static bfd_boolean
-go32_stubbed_coff_bfd_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
+go32exe_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
 {
   /* Check if both are the same targets.  */
   if (ibfd->xvec != obfd->xvec)
@@ -249,7 +249,7 @@ go32exe_cleanup (bfd *abfd)
    file offset.  */
 
 static bfd_cleanup
-go32_check_format (bfd *abfd)
+go32exe_check_format (bfd *abfd)
 {
   struct external_DOS_hdr filehdr_dos;
   uint16_t num_pages;
@@ -368,7 +368,7 @@ go32exe_mkobject (bfd *abfd)
   coff->relocbase = 0;
   coff->local_toc_sym_map = 0;
 
-  create_go32_stub (abfd);
+  go32exe_create_stub (abfd);
   if (coff->stub == NULL)
     {
       bfd_release (abfd, coff);
