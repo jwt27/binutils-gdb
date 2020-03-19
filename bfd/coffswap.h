@@ -725,6 +725,7 @@ coff_swap_aouthdr_out (bfd * abfd, void * in, void * out)
   return AOUTSZ;
 }
 
+#ifndef coff_swap_scnhdr_in
 static void
 coff_swap_scnhdr_in (bfd * abfd, void * ext, void * in)
 {
@@ -750,7 +751,9 @@ coff_swap_scnhdr_in (bfd * abfd, void * ext, void * in)
   COFF_ADJUST_SCNHDR_IN_POST (abfd, ext, in);
 #endif
 }
+#endif
 
+#ifndef coff_swap_scnhdr_out
 static unsigned int
 coff_swap_scnhdr_out (bfd * abfd, void * in, void * out)
 {
@@ -806,3 +809,4 @@ coff_swap_scnhdr_out (bfd * abfd, void * in, void * out)
 #endif
   return ret;
 }
+#endif
