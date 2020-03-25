@@ -217,8 +217,9 @@ go32exe_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
   /* Make sure we have a source stub.  */
   BFD_ASSERT (coff_data (ibfd)->stub != NULL);
 
-  /* Allocate the output stub.  */
-  coff_data (obfd)->stub = bfd_alloc (obfd, coff_data (ibfd)->stub_size);
+  /* Reallocate the output stub if necessary.  */
+  if (coff_data (ibfd)->stub_size > coff_data (obfd)->stub_size)
+    coff_data (obfd)->stub = bfd_alloc (obfd, coff_data (ibfd)->stub_size);
   if (coff_data (obfd)->stub == NULL)
     return FALSE;
 
